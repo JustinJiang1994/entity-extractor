@@ -4,4 +4,5 @@ scikit-learn>=1.0.0
 matplotlib>=3.5.0
 seaborn>=0.11.0
 tqdm>=4.62.0
-jieba>=0.42.1 
+jieba>=0.42.1
+sklearn-crfsuite>=0.3.6 

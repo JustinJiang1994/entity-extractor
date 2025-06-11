@@ -1,8 +1,8 @@
-# 基于HMM的中文命名实体识别 (HMM-based Chinese NER)
+# 基于HMM和CRF的中文命名实体识别 (HMM & CRF-based Chinese NER)
 
 ## 📋 项目概述
 
-这是一个基于隐马尔可夫模型(HMM)的中文命名实体识别项目，使用CCFBDCI数据集进行训练。项目实现了完整的NER流程，包括数据处理、模型训练、评估和可视化。
+这是一个基于隐马尔可夫模型(HMM)和条件随机场(CRF)的中文命名实体识别项目，使用CCFBDCI数据集进行训练。项目实现了完整的NER流程，包括数据处理、模型训练、评估、对比和可视化。
 
 ## 🏗️ 项目结构
 
@@ -12,10 +12,14 @@ entity-extractor/
 │   └── ccfbdci.jsonl          # 原始数据集
 ├── models/                    # 训练好的模型
 ├── results/                   # 评估结果和可视化
+├── comparison_results/        # 模型对比结果
 ├── hmm_ner.py                 # HMM NER模型实现
+├── crf_ner.py                 # CRF NER模型实现
+├── model_comparison.py        # 模型对比脚本
+├── enhanced_demo.py           # 增强版演示脚本
 ├── visualization.py           # 可视化模块
 ├── train_and_evaluate.py      # 训练和评估脚本
-├── demo.py                    # 演示脚本
+├── demo.py                    # 基础演示脚本
 ├── analyze_data.py            # 数据分析脚本
 ├── show_format_examples.py    # 数据格式展示
 ├── requirements.txt           # 项目依赖
@@ -33,17 +37,33 @@ pip install -r requirements.txt
 ### 2. 训练模型
 
 ```bash
-python train_and_evaluate.py
+# 训练HMM模型
+python hmm_ner.py
+
+# 训练CRF模型
+python crf_ner.py
+
+# 运行模型对比
+python model_comparison.py
 ```
 
 ### 3. 使用模型
 
 ```bash
-# 交互式演示
-python demo.py
+# 增强版交互式演示
+python enhanced_demo.py
 
 # 批量演示
-python demo.py batch
+python enhanced_demo.py batch
+
+# 模型对比演示
+python enhanced_demo.py comparison
+
+# 仅使用HMM模型
+python enhanced_demo.py hmm
+
+# 仅使用CRF模型
+python enhanced_demo.py crf
 ```
 
 ## 📊 数据集信息
@@ -65,16 +85,28 @@ python demo.py batch
 
 ## 🧠 模型架构
 
-### HMM模型参数
+### HMM模型
 - **状态空间**: 9个状态 (O, B-PER, I-PER, B-ORG, I-ORG, B-LOC, I-LOC, B-GPE, I-GPE)
 - **观测空间**: 字符级别的词汇表
 - **标注方案**: BIO标注
 - **解码算法**: Viterbi算法
+- **核心参数**: 初始状态概率(π)、状态转移矩阵(A)、发射概率矩阵(B)
 
-### 核心组件
-1. **初始状态概率 (π)**: 各状态的初始概率分布
-2. **状态转移矩阵 (A)**: 状态间的转移概率
-3. **发射概率矩阵 (B)**: 状态到观测的发射概率
+### CRF模型
+- **状态空间**: 9个状态 (O, B-PER, I-PER, B-ORG, I-ORG, B-LOC, I-LOC, B-GPE, I-GPE)
+- **特征工程**: 字符级特征、上下文特征、位置特征、n-gram特征
+- **标注方案**: BIO标注
+- **训练算法**: L-BFGS优化
+- **正则化**: L1和L2正则化
+
+### 特征对比
+| 特征类型 | HMM | CRF |
+|---------|-----|-----|
+| 字符特征 | ✅ | ✅ |
+| 上下文特征 | ❌ | ✅ |
+| 位置特征 | ❌ | ✅ |
+| n-gram特征 | ❌ | ✅ |
+| 标签依赖 | 马尔可夫假设 | 全局最优 |
 
 ## 🔧 核心功能
 
@@ -85,24 +117,25 @@ python demo.py batch
 - 数据集划分 (80%训练, 20%测试)
 
 ### 模型训练
-- 统计学习HMM参数
-- 拉普拉斯平滑处理
-- 支持大规模数据训练
+- **HMM**: 统计学习参数，拉普拉斯平滑
+- **CRF**: 特征工程，L-BFGS优化，正则化
 
 ### 模型评估
 - 精确率、召回率、F1分数
 - 混淆矩阵可视化
 - 详细的分类报告
+- 模型性能对比
 
 ### 可视化分析
 - 实体分布饼图
 - 训练指标统计
 - 词汇表分析
 - 模型性能对比
+- 特征重要性分析
 
 ## 📈 使用示例
 
-### 训练模型
+### 训练HMM模型
 ```python
 from hmm_ner import HMMNER
 
@@ -122,18 +155,36 @@ model.train(sequences, labels)
 model.save_model('models/hmm_ner_model.pkl')
 ```
 
-### 预测实体
+### 训练CRF模型
 ```python
-# 加载模型
-model.load_model('models/hmm_ner_model.pkl')
+from crf_ner import CRFNER
 
-# 预测文本
-text = "菲律宾总统埃斯特拉达宣布重要决定。"
-char_seq = list(text)
-pred_labels = model.viterbi_decode(char_seq)
+# 初始化模型
+model = CRFNER(algorithm='lbfgs', c1=0.1, c2=0.1)
 
-# 提取实体
-entities = extract_entities_from_bio(char_seq, pred_labels)
+# 加载数据
+sequences, labels = model.load_data('data/ccfbdci.jsonl')
+
+# 构建词汇表
+model.build_vocabulary(sequences)
+
+# 训练模型
+model.train(sequences, labels)
+
+# 获取特征重要性
+feature_importance = model.get_feature_importance(top_n=10)
+
+# 保存模型
+model.save_model('models/crf_ner_model.pkl')
+```
+
+### 模型对比
+```python
+from model_comparison import ModelComparison
+
+# 运行完整对比
+comparison = ModelComparison()
+comparison.run_complete_comparison()
 ```
 
 ## 📊 模型性能
@@ -142,12 +193,17 @@ entities = extract_entities_from_bio(char_seq, pred_labels)
 - **整体准确率**: 基于字符级别的序列标注
 - **实体识别**: 支持4种实体类型的识别
 - **边界检测**: 精确的实体边界定位
+- **F1分数**: 综合精确率和召回率
 
-### 技术特点
-- **字符级建模**: 适合中文文本处理
-- **BIO标注**: 标准的序列标注方案
-- **平滑处理**: 解决数据稀疏问题
-- **高效解码**: Viterbi算法优化
+### 技术特点对比
+| 特点 | HMM | CRF |
+|------|-----|-----|
+| 训练速度 | 快 | 慢 |
+| 预测速度 | 快 | 中等 |
+| 特征表达能力 | 有限 | 强 |
+| 标签依赖建模 | 马尔可夫假设 | 全局最优 |
+| 模型复杂度 | 低 | 高 |
+| 过拟合风险 | 低 | 中等 |
 
 ## 🎯 应用场景
 
@@ -156,6 +212,7 @@ entities = extract_entities_from_bio(char_seq, pred_labels)
 - **信息检索**: 提升搜索精度
 - **文本挖掘**: 大规模文本的实体识别
 - **自然语言处理**: 作为NER任务的基础模型
+- **模型对比研究**: 比较不同序列标注算法的性能
 
 ## 📝 数据格式
 
@@ -179,7 +236,7 @@ entities = extract_entities_from_bio(char_seq, pred_labels)
 ### 输出格式
 - **BIO标签**: 字符级别的序列标注
 - **实体提取**: 结构化的实体信息
-- **置信度**: 基于HMM概率的置信度
+- **置信度**: 基于模型概率的置信度
 
 ## 🔍 分析工具
 
@@ -190,6 +247,18 @@ python analyze_data.py
 
 # 数据格式展示
 python show_format_examples.py
+```
+
+### 模型训练
+```bash
+# 训练HMM模型
+python hmm_ner.py
+
+# 训练CRF模型
+python crf_ner.py
+
+# 模型对比
+python model_comparison.py
 ```
 
 ### 可视化分析
@@ -206,9 +275,12 @@ viz.plot_confusion_matrix(y_true, y_pred, labels)
 | 文件 | 功能 |
 |------|------|
 | `hmm_ner.py` | HMM NER模型核心实现 |
+| `crf_ner.py` | CRF NER模型核心实现 |
+| `model_comparison.py` | HMM和CRF模型对比 |
+| `enhanced_demo.py` | 支持多模型的演示脚本 |
 | `visualization.py` | 可视化分析模块 |
 | `train_and_evaluate.py` | 完整的训练评估流程 |
-| `demo.py` | 模型使用演示 |
+| `demo.py` | 基础演示脚本 |
 | `analyze_data.py` | 数据集分析工具 |
 | `show_format_examples.py` | 数据格式展示 |
 
@@ -218,14 +290,18 @@ viz.plot_confusion_matrix(y_true, y_pred, labels)
 - Python 3.7+
 - NumPy 1.21+
 - scikit-learn 1.0+
+- sklearn-crfsuite 0.3.6+
 - matplotlib 3.5+
 - tqdm 4.62+
 
 ### 安装步骤
 1. 克隆项目
 2. 安装依赖: `pip install -r requirements.txt`
-3. 运行训练: `python train_and_evaluate.py`
-4. 使用模型: `python demo.py`
+3. 运行训练: 
+   - `python hmm_ner.py` (HMM模型)
+   - `python crf_ner.py` (CRF模型)
+   - `python model_comparison.py` (模型对比)
+4. 使用模型: `python enhanced_demo.py`
 
 ## 📊 结果文件
 
@@ -233,12 +309,20 @@ viz.plot_confusion_matrix(y_true, y_pred, labels)
 
 ### 模型文件
 - `models/hmm_ner_model.pkl`: 训练好的HMM模型
+- `models/crf_ner_model.pkl`: 训练好的CRF模型
 
 ### 评估结果
 - `results/classification_report.txt`: 详细分类报告
 - `results/prediction_examples.json`: 预测示例
 - `results/model_statistics.json`: 模型统计信息
 - `results/summary_report.txt`: 总结报告
+
+### 对比结果
+- `comparison_results/f1_comparison.png`: F1分数对比
+- `comparison_results/time_comparison.png`: 预测时间对比
+- `comparison_results/hmm_confusion_matrix.png`: HMM混淆矩阵
+- `comparison_results/crf_confusion_matrix.png`: CRF混淆矩阵
+- `comparison_results/comparison_report.txt`: 对比报告
 
 ### 可视化图表
 - `results/confusion_matrix.png`: 混淆矩阵
