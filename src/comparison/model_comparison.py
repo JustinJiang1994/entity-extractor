@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import json
 import time
 import numpy as np
@@ -12,9 +13,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 
-from hmm_ner import HMMNER
-from crf_ner import CRFNER
-from visualization import HMMVisualization
+# 添加项目根目录到路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+from src.models.hmm_ner import HMMNER
+from src.models.crf_ner import CRFNER
+from src.visualization.visualization import HMMVisualization
 
 class ModelComparison:
     """模型对比类"""

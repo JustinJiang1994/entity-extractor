@@ -3,7 +3,15 @@
 
 import os
 import sys
-from hmm_ner import HMMNER
+import json
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+# 添加项目根目录到路径
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from src.models.hmm_ner import HMMNER
 
 def load_model():
     """加载训练好的模型"""

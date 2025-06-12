@@ -1,0 +1,15 @@
+{
+  "model_performance": {
+    "hmm": {
+      "f1_score": 0.8745405492737923,
+      "prediction_time": 1.6970140933990479
+    },
+    "crf": {
+      "f1_score": 0.9692882599164921,
+      "prediction_time": 0.4236021041870117
+    }
+  },
+  "best_model": "crf",
+  "best_f1_score": 0.9692882599164921,
+  "fastest_model": "crf"
+}

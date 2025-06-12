@@ -3,8 +3,21 @@
 
 import os
 import sys
-from hmm_ner import HMMNER
-from crf_ner import CRFNER
+import json
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+
+# 添加项目根目录到路径
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
+
+from src.models.hmm_ner import HMMNER
+from src.models.crf_ner import CRFNER
+from src.models.rnn_ner import RNNNERModel
+from src.models.cnn_ner import CNNNERModel
+from src.models.gru_ner import GRUNERModel
+from src.models.lstm_ner import LSTMNERModel
+from src.models.bert_ner import BERTNERModel
 
 def load_models():
     """加载训练好的模型"""

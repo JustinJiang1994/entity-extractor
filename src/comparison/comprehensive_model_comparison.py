@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import json
 import time
 import numpy as np
@@ -12,14 +13,12 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
 
-from hmm_ner import HMMNER
-from crf_ner import CRFNER
-from rnn_ner import RNNNERModel
-from cnn_ner import CNNNERModel
-from gru_ner import GRUNERModel
-from lstm_ner import LSTMNERModel
-from bert_ner import BERTNERModel
-from visualization import HMMVisualization
+# 添加项目根目录到路径
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
+
+from src.models.hmm_ner import HMMNER
+from src.models.crf_ner import CRFNER
+from src.visualization.visualization import HMMVisualization
 
 class ComprehensiveModelComparison:
     """综合模型对比类"""
@@ -32,17 +31,7 @@ class ComprehensiveModelComparison:
         # 模型配置
         self.model_configs = {
             'hmm': HMMNER(),
-            'crf': CRFNER(algorithm='lbfgs', c1=0.1, c2=0.1, max_iterations=100),
-            'rnn': RNNNERModel(embedding_dim=128, hidden_dim=256, num_layers=2, 
-                              dropout=0.5, bidirectional=True, learning_rate=0.001),
-            'cnn': CNNNERModel(embedding_dim=128, num_filters=128, filter_sizes=[3, 4, 5], 
-                              dropout=0.5, learning_rate=0.001),
-            'gru': GRUNERModel(embedding_dim=128, hidden_dim=256, num_layers=2, 
-                              dropout=0.5, bidirectional=True, learning_rate=0.001),
-            'lstm': LSTMNERModel(embedding_dim=128, hidden_dim=256, num_layers=2, 
-                                dropout=0.5, bidirectional=True, learning_rate=0.001),
-            'bert': BERTNERModel(bert_model_name='bert-base-chinese', learning_rate=2e-5, 
-                                warmup_steps=0, weight_decay=0.01)
+            'crf': CRFNER(algorithm='lbfgs', c1=0.1, c2=0.1, max_iterations=100)
         }
         
     def load_and_prepare_data(self, data_file):
@@ -82,15 +71,8 @@ class ComprehensiveModelComparison:
             
             start_time = time.time()
             
-            if model_name in ['hmm', 'crf']:
-                # 传统机器学习模型
-                model.train(train_seqs, train_labels)
-            elif model_name in ['rnn', 'cnn', 'gru', 'lstm']:
-                # 深度学习模型
-                model.train(train_seqs, train_labels, epochs=5)  # 减少epochs以节省时间
-            elif model_name == 'bert':
-                # BERT模型
-                model.train(train_seqs, train_labels, epochs=2)  # BERT训练较慢
+            # 传统机器学习模型
+            model.train(train_seqs, train_labels)
             
             training_time = time.time() - start_time
             training_times[model_name] = training_time
@@ -177,17 +159,13 @@ class ComprehensiveModelComparison:
         
         # 模型分类
         traditional_models = ['hmm', 'crf']
-        deep_learning_models = ['rnn', 'cnn', 'gru', 'lstm']
-        transformer_models = ['bert']
         
         print(f"\n📊 模型分类:")
         print(f"传统机器学习模型: {', '.join(traditional_models).upper()}")
-        print(f"深度学习模型: {', '.join(deep_learning_models).upper()}")
-        print(f"Transformer模型: {', '.join(transformer_models).upper()}")
         
         return model_names, f1_scores, pred_times
     
-    def create_comprehensive_visualizations(self):
+    def create_comprehensive_visualizations(self, test_labels):
         """创建综合可视化"""
         print("\n" + "=" * 80)
         print("创建综合可视化")
@@ -242,20 +220,12 @@ class ComprehensiveModelComparison:
         # 3. 性能-时间散点图
         plt.figure(figsize=(12, 8))
         
-        # 按模型类型分组
+        # 传统机器学习模型
         traditional_idx = [i for i, name in enumerate(model_names) if name in ['hmm', 'crf']]
-        dl_idx = [i for i, name in enumerate(model_names) if name in ['rnn', 'cnn', 'gru', 'lstm']]
-        transformer_idx = [i for i, name in enumerate(model_names) if name in ['bert']]
         
         plt.scatter([pred_times[i] for i in traditional_idx], 
                    [f1_scores[i] for i in traditional_idx], 
                    c='red', s=100, label='传统机器学习', alpha=0.7)
-        plt.scatter([pred_times[i] for i in dl_idx], 
-                   [f1_scores[i] for i in dl_idx], 
-                   c='blue', s=100, label='深度学习', alpha=0.7)
-        plt.scatter([pred_times[i] for i in transformer_idx], 
-                   [f1_scores[i] for i in transformer_idx], 
-                   c='green', s=100, label='Transformer', alpha=0.7)
         
         # 添加模型标签
         for i, name in enumerate(model_names):
@@ -272,15 +242,15 @@ class ComprehensiveModelComparison:
         plt.savefig('comprehensive_results/performance_time_tradeoff.png', dpi=300, bbox_inches='tight')
         plt.show()
         
-        # 4. 混淆矩阵对比（选择几个代表性模型）
-        representative_models = ['hmm', 'crf', 'lstm', 'bert']
+        # 4. 混淆矩阵对比（选择代表性模型）
+        representative_models = ['hmm', 'crf']
         
         for model_name in representative_models:
             if model_name in self.results:
                 flat_true = []
                 flat_pred = []
                 
-                for true_seq, pred_seq in zip(self.results['test_labels'], 
+                for true_seq, pred_seq in zip(test_labels, 
                                              self.results[model_name]['pred_labels']):
                     min_len = min(len(true_seq), len(pred_seq))
                     flat_true.extend(true_seq[:min_len])
@@ -291,7 +261,7 @@ class ComprehensiveModelComparison:
                     f'comprehensive_results/{model_name}_confusion_matrix.png'
                 )
     
-    def save_comprehensive_results(self):
+    def save_comprehensive_results(self, test_labels):
         """保存综合对比结果"""
         print("\n" + "=" * 80)
         print("保存综合对比结果")
@@ -310,8 +280,8 @@ class ComprehensiveModelComparison:
 ================
 
 数据集信息:
-- 训练集大小: {len(self.results.get('test_labels', []))}
-- 测试集大小: {len(self.results.get('test_labels', []))}
+- 训练集大小: {len(test_labels)}
+- 测试集大小: {len(test_labels)}
 - 实体类型: 4种 (PER, ORG, LOC, GPE)
 
 模型性能排名:
@@ -332,32 +302,20 @@ class ComprehensiveModelComparison:
 - HMM: 基于统计的序列标注，训练快速，但特征表达能力有限
 - CRF: 考虑标签间依赖关系，特征工程丰富，性能较好
 
-深度学习模型:
-- RNN: 基础循环神经网络，能处理序列信息
-- CNN: 卷积神经网络，擅长捕获局部特征
-- GRU: 门控循环单元，解决RNN梯度消失问题
-- LSTM: 长短期记忆网络，更好的长期依赖建模
-
-Transformer模型:
-- BERT: 预训练语言模型，强大的语义理解能力
-
 技术特点对比:
 | 模型类型 | 训练速度 | 预测速度 | 特征表达 | 语义理解 | 计算资源 |
 |---------|---------|---------|---------|---------|---------|
 | 传统ML   | 快      | 快      | 有限     | 弱      | 低      |
-| 深度学习 | 中等    | 中等    | 强      | 中等    | 中等    |
-| Transformer| 慢    | 慢      | 最强    | 最强    | 高      |
 
 结论:
 - 最佳性能: {sorted_models[0][0].upper()} (F1: {sorted_models[0][1]:.4f})
 - 最快速度: {min(zip(model_names, pred_times), key=lambda x: x[1])[0].upper()}
-- 最佳性价比: 根据具体应用场景选择
 
 应用建议:
-1. 资源受限场景: 选择HMM或CRF
-2. 平衡性能与效率: 选择LSTM或GRU
-3. 追求最佳性能: 选择BERT
-4. 实时应用: 选择HMM或CNN
+1. 资源受限场景: 选择HMM
+2. 追求更好性能: 选择CRF
+3. 实时应用: 选择HMM
+4. 离线批处理: 选择CRF
 """
         
         with open('comprehensive_results/comprehensive_report.txt', 'w', encoding='utf-8') as f:
@@ -384,7 +342,7 @@ Transformer模型:
     def run_comprehensive_comparison(self, data_file='data/ccfbdci.jsonl'):
         """运行综合模型对比"""
         print("🚀 开始综合模型对比")
-        print("包含模型: HMM, CRF, RNN, CNN, GRU, LSTM, BERT")
+        print("包含模型: HMM, CRF")
         
         # 1. 数据准备
         train_seqs, test_seqs, train_labels, test_labels = self.load_and_prepare_data(data_file)
@@ -399,10 +357,10 @@ Transformer模型:
         self.compare_performance()
         
         # 5. 创建可视化
-        self.create_comprehensive_visualizations()
+        self.create_comprehensive_visualizations(test_labels)
         
         # 6. 保存结果
-        self.save_comprehensive_results()
+        self.save_comprehensive_results(test_labels)
         
         print("\n🎉 综合模型对比完成!")
         print("结果文件保存在 comprehensive_results/ 目录")

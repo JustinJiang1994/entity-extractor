@@ -2,14 +2,21 @@
 # -*- coding: utf-8 -*-
 
 import os
+import sys
 import json
 import pickle
-from hmm_ner import HMMNER
-from visualization import HMMVisualization
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
 import numpy as np
+import pandas as pd
+from src.models.hmm_ner import HMMNER
+from src.visualization.visualization import HMMVisualization
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, f1_score
+import matplotlib.pyplot as plt
+import seaborn as sns
 from tqdm import tqdm
+
+# 添加项目根目录到路径
+sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 def train_and_evaluate():
     """完整的训练和评估流程"""

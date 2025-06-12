@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from collections import defaultdict, Counter
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.metrics import classification_report, confusion_matrix, f1_score
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
@@ -222,10 +222,14 @@ class HMMNER:
                                      target_names=self.states, 
                                      zero_division=0)
         
+        # 计算F1分数
+        f1_score_val = f1_score(flat_true, flat_pred, average='weighted')
+        
         print("分类报告:")
         print(report)
+        print(f"加权F1分数: {f1_score_val:.4f}")
         
-        return report
+        return report, f1_score_val
     
     def save_model(self, file_path):
         """保存模型"""
@@ -288,7 +292,7 @@ def main():
     pred_labels = model.predict(test_seqs)
     
     # 评估模型
-    model.evaluate(test_labels, pred_labels)
+    report, f1_score_val = model.evaluate(test_labels, pred_labels)
     
     # 保存模型
     model.save_model('hmm_ner_model.pkl')
