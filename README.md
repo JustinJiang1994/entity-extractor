@@ -412,18 +412,6 @@ viz.plot_confusion_matrix(y_true, y_pred, labels)
 - `results/vocabulary_stats.png`: 词汇表统计
 - `results/model_performance.png`: 模型性能
 
-## 🤝 贡献指南
-
-欢迎提交Issue和Pull Request来改进项目！
-
-## 📄 许可证
-
-本项目采用MIT许可证。
-
-## 📞 联系方式
-
-如有问题，请通过GitHub Issues联系。
-
 ## 🔧 核心功能
 
 ### 数据处理
